@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Chess Game</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap');
+
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #2e2e2e;
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        table {
+            border-collapse: collapse;
+            margin: 20px;
+        }
+
+        td {
+            width: 60px;
+            height: 60px;
+            text-align: center;
+            font-size: 2em;
+            vertical-align: middle;
+        }
+
+        .white {
+            background-color: #f0d9b5;
+        }
+
+        .black {
+            background-color: #b58863;
+        }
+
+        .piece {
+            cursor: grab;
+        }
+    </style>
+</head>
+<body>
+    <table id="chessboard"></table>
+
+    <script>
+        const chessboard = document.getElementById('chessboard');
+
+        // Unicode symbols for the chess pieces
+        const pieces = {
+            'white': {
+                'king': '&#9812;',
+                'queen': '&#9813;',
+                'rook': '&#9814;',
+                'bishop': '&#9815;',
+                'knight': '&#9816;',
+                'pawn': '&#9817;'
+            },
+            'black': {
+                'king': '&#9818;',
+                'queen': '&#9819;',
+                'rook': '&#9820;',
+                'bishop': '&#9821;',
+                'knight': '&#9822;',
+                'pawn': '&#9823;'
+            }
+        };
+
+        // Initial board setup
+        const initialBoard = [
+            ['black.rook', 'black.knight', 'black.bishop', 'black.queen', 'black.king', 'black.bishop', 'black.knight', 'black.rook'],
+            ['black.pawn', 'black.pawn', 'black.pawn', 'black.pawn', 'black.pawn', 'black.pawn', 'black.pawn', 'black.pawn'],
+            [null, null, null, null, null, null, null, null],
+            [null, null, null, null, null, null, null, null],
+            [null, null, null, null, null, null, null, null],
+            [null, null, null, null, null, null, null, null],
+            ['white.pawn', 'white.pawn', 'white.pawn', 'white.pawn', 'white.pawn', 'white.pawn', 'white.pawn', 'white.pawn'],
+            ['white.rook', 'white.knight', 'white.bishop', 'white.queen', 'white.king', 'white.bishop', 'white.knight', 'white.rook']
+        ];
+
+        // Function to create the chessboard
+        function createChessboard() {
+            for (let row = 0; row < 8; row++) {
+                const tr = document.createElement('tr');
+                for (let col = 0; col < 8; col++) {
+                    const td = document.createElement('td');
+                    td.setAttribute('data-row', row);
+                    td.setAttribute('data-col', col);
+                    
+                    // Set alternating colors for the squares
+                    if ((row + col) % 2 === 0) {
+                        td.classList.add('white');
+                    } else {
+                        td.classList.add('black');
+                    }
+
+                    // Add chess pieces based on initial setup
+                    const pieceInfo = initialBoard[row][col];
+                    if (pieceInfo) {
+                        const [color, piece] = pieceInfo.split('.');
+                        const pieceElement = document.createElement('span');
+                        pieceElement.innerHTML = pieces[color][piece];
+                        pieceElement.classList.add('piece');
+                        pieceElement.setAttribute('draggable', 'true');
+                        pieceElement.setAttribute('data-piece', pieceInfo);
+                        td.appendChild(pieceElement);
+                    }
+
+                    // Add event listeners for drag-and-drop
+                    td.addEventListener('dragover', (e) => e.preventDefault());
+                    td.addEventListener('drop', handleDrop);
+
+                    tr.appendChild(td);
+                }
+                chessboard.appendChild(tr);
+            }
+        }
+
+        // Function to handle dragstart event
+        document.addEventListener('dragstart', (e) => {
+            if (e.target.classList.contains('piece')) {
+                e.dataTransfer.setData('text/plain', e.target.getAttribute('data-piece'));
+                e.dataTransfer.setData('source-cell', e.target.parentNode.getAttribute('data-row') + '-' + e.target.parentNode.getAttribute('data-col'));
+                // Set the drag image to a transparent 1x1 pixel to hide the default image
+                const img = new Image();
+                img.src = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/wcAAgAB/AYCLdsAAAAASUVORK5CYII=';
+                e.dataTransfer.setDragImage(img, 0, 0);
+            }
+        });
+
+        // Function to handle drop event
+        function handleDrop(e) {
+            e.preventDefault();
+            const dataPiece = e.dataTransfer.getData('text/plain');
+            const sourceCellCoordinates = e.dataTransfer.getData('source-cell');
+            const targetCell = e.target.closest('td');
+
+            // Get source cell
+            const sourceCell = document.querySelector(`[data-row="${sourceCellCoordinates.split('-')[0]}"][data-col="${sourceCellCoordinates.split('-')[1]}"]`);
+
+            // Check if the source and target cells are different
+            if (targetCell !== sourceCell) {
+                // Remove the piece from the source cell
+                sourceCell.innerHTML = '';
+
+                // Add the piece to the target cell
+                const pieceElement = document.createElement('span');
+                pieceElement.innerHTML = pieces[dataPiece.split('.')[0]][dataPiece.split('.')[1]];
+                pieceElement.classList.add('piece');
+                pieceElement.setAttribute('draggable', 'true');
+                pieceElement.setAttribute('data-piece', dataPiece);
+                targetCell.innerHTML = ''; // Clear the target cell
+                targetCell.appendChild(pieceElement);
+
+                // Add the dragstart event listener to the newly added piece
+                pieceElement.addEventListener('dragstart', (e) => {
+                    e.dataTransfer.setData('text/plain', e.target.getAttribute('data-piece'));
+                    e.dataTransfer.setData('source-cell', e.target.parentNode.getAttribute('data-row') + '-' + e.target.parentNode.getAttribute('data-col'));
+                    // Set the drag image to a transparent 1x1 pixel to hide the default image
+                    const img = new Image();
+                    img.src = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/wcAAgAB/AYCLdsAAAAASUVORK5CYII=';
+                    e.dataTransfer.setDragImage(img, 0, 0);
+                });
+            }
+        }
+
+        createChessboard();
+    </script>
+</body>
+</html>
